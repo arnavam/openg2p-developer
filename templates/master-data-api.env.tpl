@@ -13,12 +13,31 @@ GEN2_MASTER_DATA_API_DB_USERNAME="postgres"
 GEN2_MASTER_DATA_API_DB_PASSWORD="{{POSTGRES_PASSWORD}}"
 GEN2_MASTER_DATA_API_DB_DBNAME="{{REGISTRY_MASTER_DATA_DB_NAME}}"
 
-# iam-core auth middleware (COMMON_*). Keep false for local registry e2e.
+# Current master-data-api source (Settings(IamSettings), env_prefix
+# "master_data_api_") reads these names instead of the GEN2_ ones above.
+# Keep both: the pinned Docker image (0.0.0-develop.26) is older and still
+# wants GEN2_, the workspace clone used for native runs is newer.
+MASTER_DATA_API_DB_DRIVER="postgresql+asyncpg"
+MASTER_DATA_API_DB_HOSTNAME="{{POSTGRES_HOST}}"
+MASTER_DATA_API_DB_PORT={{POSTGRES_PORT}}
+MASTER_DATA_API_DB_USERNAME="postgres"
+MASTER_DATA_API_DB_PASSWORD="{{POSTGRES_PASSWORD}}"
+MASTER_DATA_API_DB_DBNAME="{{REGISTRY_MASTER_DATA_DB_NAME}}"
+MASTER_DATA_API_HOST="0.0.0.0"
+MASTER_DATA_API_PORT={{MASTER_DATA_API_PORT}}
+
+# iam-core auth middleware. Current source reads MASTER_DATA_API_*, not
+# COMMON_*, for this service (see note above). Keep both, auth off either way.
 COMMON_AUTH_ENABLED="false"
 COMMON_AUTH_PROVIDER_API_URL="http://localhost:{{IAM_STAFF_PORT}}"
 COMMON_KEYCLOAK_CLIENT_ID="{{REGISTRY_KEYCLOAK_CLIENT_ID}}"
 COMMON_AUTH_REDIS_URL="redis://{{REDIS_HOST}}:{{REDIS_PORT}}/0"
 COMMON_AUTH_VERIFY_SSL="false"
+MASTER_DATA_API_AUTH_ENABLED="false"
+MASTER_DATA_API_AUTH_PROVIDER_API_URL="http://localhost:{{IAM_STAFF_PORT}}"
+MASTER_DATA_API_KEYCLOAK_CLIENT_ID="{{REGISTRY_KEYCLOAK_CLIENT_ID}}"
+MASTER_DATA_API_AUTH_REDIS_URL="redis://{{REDIS_HOST}}:{{REDIS_PORT}}/0"
+MASTER_DATA_API_AUTH_VERIFY_SSL="false"
 
 UVICORN_HOST="0.0.0.0"
 UVICORN_PORT={{MASTER_DATA_API_PORT}}

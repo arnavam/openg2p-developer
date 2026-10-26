@@ -19,7 +19,7 @@ COMPOSE_PROFILES := --profile infra --profile with-redis --profile commons --pro
 	pbms-setup pbms-full-setup pbms-init init-pbms-bg-tasks init-bridge init-spar seed-spar-farmer-links \
 	pbms-run pbms-stop free-native-stack free-spar-ports \
 	start-pbms-bg-tasks start-spar start-bridge \
-	verify-native-stack verify-pbms verify-registry verify-bridge verify-spar retry-bridge-fa \
+	verify-native-stack verify-pbms verify-registry verify-bridge verify-spar retry-bridge-fa staff-client staff-client-serve \
 	farmer-registry-run nsr-registry-run bridge-run spar-run iam-run awe-run \
 	farmer-setup farmer-registry-init farmer-registry-migrate farmer-registry-seed farmer-registry-fix-seed-enums farmer-registry-validate-seed \
 	nsr-setup nsr-registry-init nsr-registry-migrate nsr-registry-seed seed-registry iam-init awe-init master-data-init master-data-seed \
@@ -320,3 +320,9 @@ start-spar: ## Start SPAR (no config regen)
 	@bash scripts/run-spar.sh
 
 spar-run: generate start-spar ## Regenerate config then start SPAR
+
+staff-client: ## Test standalone JS staff client against IAM and Registry APIs (follows docs/ routes)
+	@node scripts/staff-client.mjs
+
+staff-client-serve: ## Run interactive JS staff client web UI on http://localhost:3005
+	@node scripts/staff-client.mjs --serve

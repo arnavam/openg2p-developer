@@ -79,9 +79,9 @@ images:
 
   # Commons
   iam_staff_portal_api: openg2p/iam-staff-portal-api:1.3.0
-  master_data_api: registry.gitlab.com/openg2p/master-data-service/master-data-api:0.0.0-develop.26
-  awe_api: registry.gitlab.com/openg2p/awe/openg2p-awe:0.0.0-develop.67
-  awe_ui: registry.gitlab.com/openg2p/awe/openg2p-awe-ui:0.0.0-develop.67
+  master_data_api: openg2p/openg2p-gen2-master-data-api:1.0.1
+  awe_api: openg2p/openg2p-awe:1.2.0
+  awe_ui: openg2p/openg2p-awe-ui:1.2.0
 
   # Farmer Registry
   farmer_registry_staff_api: openg2p/openg2p-farmer-registry-staff-api:1.2.0

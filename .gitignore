@@ -3,9 +3,15 @@ generated/
 .openg2p-workspace/
 repos/
 
-# Environment
+# Environment & Secrets
 .env
 *.local.env
+*.pem
+*.key
+
+# Build & Logs
+*.err
+*.log
 
 # Python
 venv/

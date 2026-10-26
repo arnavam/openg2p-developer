@@ -134,6 +134,26 @@ render_registry_variant \
   "nsr-master-data-api" \
   "${REGISTRY_AUTH_ENABLED}"
 
+# shellcheck disable=SC1091
+source "${ROOT_DIR}/scripts/lib/extension-manifest.sh"
+
+while IFS= read -r custom_variant; do
+  [[ -n "$custom_variant" ]] || continue
+  extension_manifest_load "$custom_variant"
+  render_registry_variant \
+    "${custom_variant}" \
+    "${EXTENSION_REGISTRY_DB}" \
+    "${EXTENSION_MASTER_DATA_DB}" \
+    "${EXTENSION_STAFF_API_PORT}" \
+    "${EXTENSION_UI_PORT}" \
+    "${EXTENSION_WORKER_QUEUE}" \
+    "${EXTENSION_KEYCLOAK_CLIENT_ID}" \
+    "${EXTENSION_UI_APP_MNEMONIC}" \
+    "${custom_variant}-staff-api" \
+    "${custom_variant}-master-data-api" \
+    "${REGISTRY_AUTH_ENABLED}"
+done < <(extension_manifest_list_variants)
+
 render "${ROOT_DIR}/templates/docker/iam-staff-portal-api.env.tpl" \
   "${GENERATED_DIR}/iam/docker/staff-portal-api.env" \
   "{{POSTGRES_PASSWORD}}" "${POSTGRES_PASSWORD}" \

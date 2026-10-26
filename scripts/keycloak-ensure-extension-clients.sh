@@ -53,10 +53,11 @@ ensure_client() {
 ensure_client_role() {
   local client_id="$1"
   local role_name="$2"
-  local client_uuid
+  local client_uuid role_name_enc
   client_uuid="$(client_internal_id "${client_id}")"
   [[ -n "${client_uuid}" ]] || return 0
-  if "${KCADM}" get "clients/${client_uuid}/roles/${role_name}" -r "${KEYCLOAK_REALM}" >/dev/null 2>&1; then
+  role_name_enc="${role_name// /%20}"
+  if "${KCADM}" get "clients/${client_uuid}/roles/${role_name_enc}" -r "${KEYCLOAK_REALM}" >/dev/null 2>&1; then
     return 0
   fi
   "${KCADM}" create "clients/${client_uuid}/roles" -r "${KEYCLOAK_REALM}" -s "name=${role_name}"
@@ -66,16 +67,34 @@ assign_client_role() {
   local username="$1"
   local client_id="$2"
   local role_name="$3"
-  local client_uuid role_id
+  local client_uuid role_id role_name_enc
   client_uuid="$(client_internal_id "${client_id}")"
   [[ -n "${client_uuid}" ]] || return 0
-  role_id="$("${KCADM}" get "clients/${client_uuid}/roles/${role_name}" -r "${KEYCLOAK_REALM}" --fields id | sed -n 's/.*"id"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1)"
+  role_name_enc="${role_name// /%20}"
+  role_id="$("${KCADM}" get "clients/${client_uuid}/roles/${role_name_enc}" -r "${KEYCLOAK_REALM}" --fields id | sed -n 's/.*"id"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1)"
   [[ -n "${role_id}" ]] || return 0
   "${KCADM}" add-roles \
     -r "${KEYCLOAK_REALM}" \
     --uusername "${username}" \
     --cid "${client_uuid}" \
     --rolename "${role_name}" >/dev/null 2>&1 || true
+}
+
+ensure_iam_staff_portal_redirect() {
+  local ui_port="$1"
+  local iam_client_uuid
+  iam_client_uuid="$(client_internal_id "iam-staff-portal" || true)"
+  [[ -n "${iam_client_uuid}" ]] || return 0
+  local target_uri="http://localhost:${ui_port}/*"
+  local client_json
+  client_json="$("${KCADM}" get "clients/${iam_client_uuid}" -r "${KEYCLOAK_REALM}" 2>/dev/null || true)"
+  [[ -n "${client_json}" ]] || return 0
+  if ! echo "${client_json}" | grep -Fq "\"${target_uri}\""; then
+    echo "[keycloak]   + adding ${target_uri} to iam-staff-portal redirectUris"
+    local updated_json
+    updated_json="$(echo "${client_json}" | sed "s|\"redirectUris\" : \[|\"redirectUris\" : \[ \"${target_uri}\",|")"
+    echo "${updated_json}" | "${KCADM}" update "clients/${iam_client_uuid}" -r "${KEYCLOAK_REALM}" -f - >/dev/null 2>&1 || true
+  fi
 }
 
 manifests=()
@@ -105,9 +124,13 @@ for manifest in "${manifests[@]}"; do
     -s 'redirectUris=["http://localhost:'"${ui_port}"'/*"]' \
     -s 'webOrigins=["http://localhost:'"${ui_port}"'"]'
 
+  ensure_iam_staff_portal_redirect "${ui_port}"
+
   for role in "${REGISTRY_STAFF_CLIENT_ROLES[@]}"; do
     ensure_client_role "${client_id}" "${role}"
-    assign_client_role "${KEYCLOAK_DEV_USER:-staff}" "${client_id}" "${role}"
+    for u in "${KEYCLOAK_DEV_USER:-staff}" alex.carter nina.patel; do
+      assign_client_role "$u" "${client_id}" "${role}"
+    done
   done
 done
 

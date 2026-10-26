@@ -67,7 +67,11 @@ _env_set_var() {
   local key="$2"
   local value="$3"
   if grep -q "^${key}=" "$file" 2>/dev/null; then
-    sed -i "s|^${key}=.*|${key}=${value}|" "$file"
+    if sed --version >/dev/null 2>&1; then
+      sed -i "s|^${key}=.*|${key}=${value}|" "$file"
+    else
+      sed -i '' "s|^${key}=.*|${key}=${value}|" "$file"
+    fi
   else
     printf '%s=%s\n' "$key" "$value" >> "$file"
   fi

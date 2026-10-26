@@ -25,8 +25,8 @@ IAM_API_DIR="${OPENG2P_WORKSPACE}/iam-service/iam-staff-portal-api"
 ENV_FILE="${ROOT_DIR}/generated/iam/staff-portal-api.env"
 PAYLOAD_FILE="${IAM_API_DIR}/samples/registry_registration_payload.json"
 
-FARMER_REGISTRY_STAFF_API_PORT="${FARMER_REGISTRY_STAFF_API_PORT:-8001}"
-NSR_REGISTRY_STAFF_API_PORT="${NSR_REGISTRY_STAFF_API_PORT:-8011}"
+FARMER_REGISTRY_UI_PORT="${FARMER_REGISTRY_UI_PORT:-3001}"
+NSR_REGISTRY_UI_PORT="${NSR_REGISTRY_UI_PORT:-3002}"
 
 POSTGRES_HOST="${POSTGRES_HOST:-localhost}"
 POSTGRES_PORT="${POSTGRES_PORT:-5432}"
@@ -57,8 +57,8 @@ if [[ ! -f "$ENV_FILE" ]]; then
 fi
 
 variants_json="$(
-  NSR_REGISTRY_STAFF_API_PORT="$NSR_REGISTRY_STAFF_API_PORT" \
-  FARMER_REGISTRY_STAFF_API_PORT="$FARMER_REGISTRY_STAFF_API_PORT" \
+  NSR_REGISTRY_UI_PORT="$NSR_REGISTRY_UI_PORT" \
+  FARMER_REGISTRY_UI_PORT="$FARMER_REGISTRY_UI_PORT" \
   python3 - <<'PY'
 import json
 import os
@@ -66,15 +66,15 @@ import os
 variants = [
     {
         "mnemonic": "registry-staff-portal",
-        "url": f"http://localhost:{os.environ['NSR_REGISTRY_STAFF_API_PORT']}",
+        "url": f"http://localhost:{os.environ['NSR_REGISTRY_UI_PORT']}",
     },
     {
         "mnemonic": "farmer-registry-staff-portal",
-        "url": f"http://localhost:{os.environ['FARMER_REGISTRY_STAFF_API_PORT']}",
+        "url": f"http://localhost:{os.environ['FARMER_REGISTRY_UI_PORT']}",
     },
     {
         "mnemonic": "nsr-registry-staff-portal",
-        "url": f"http://localhost:{os.environ['NSR_REGISTRY_STAFF_API_PORT']}",
+        "url": f"http://localhost:{os.environ['NSR_REGISTRY_UI_PORT']}",
     },
 ]
 
@@ -91,7 +91,7 @@ import json
 variants = json.loads('''${variants_json}''')
 variants.append({
     "mnemonic": "${EXTENSION_KEYCLOAK_CLIENT_ID}",
-    "url": f"http://localhost:${EXTENSION_STAFF_API_PORT}",
+    "url": f"http://localhost:${EXTENSION_UI_PORT}",
 })
 print(json.dumps(variants))
 PY

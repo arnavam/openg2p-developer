@@ -1,0 +1,56 @@
+name: openg2p-developer
+
+# Beneficiary Portal: UI + IAM bene API (portal server) behind an nginx gateway.
+# Login provider: eSignet (running separately on host :8081).
+# Start: docker compose -f compose/docker-compose.bene.yml up -d
+# Requires the infra stack (postgres, redis) from docker-compose.infra.yml.
+
+services:
+  iam-bene-api:
+    # 1.1.0 (2026-05-08): last bene API before refresh tokens became mandatory
+    # (G2P-5161, 2026-06-16). eSignet 1.x issues no refresh_token.
+    image: ${IAM_BENE_PORTAL_API_IMAGE:-openg2p/iam-bene-portal-api:1.1.0}
+    platform: linux/amd64
+    container_name: openg2p-iam-bene-api
+    extra_hosts:
+      - "localhost:host-gateway"
+    env_file:
+      - ../config/bene/iam-bene-portal-api.env
+    environment:
+      IAM_API_PORT: "8000"
+    ports:
+      - "${IAM_BENE_PORT:-8021}:8000"
+    networks: [default]
+    restart: unless-stopped
+
+  bene-portal-ui:
+    # No published image matches the IAM bene API (published tags use the old
+    # /auth/getLoginProviders routes). Build commit 6ee484c of
+    # OpenG2P/openg2p-beneficiary-portal-ui (first with get_login_providers):
+    #   git -C ../openg2p-workspace/openg2p-beneficiary-portal-ui worktree add ../openg2p-beneficiary-portal-ui-6ee484c 6ee484c
+    build:
+      context: ${BENE_PORTAL_UI_PATH:-../../openg2p-workspace/openg2p-beneficiary-portal-ui-6ee484c}
+    image: ${BENE_PORTAL_UI_IMAGE:-openg2p/openg2p-beneficiary-portal-ui:local}
+    environment:
+      NEXT_PUBLIC_MULTI_DEPARTMENT: "false"
+    container_name: openg2p-bene-portal-ui
+    extra_hosts:
+      - "localhost:host-gateway"
+    networks: [default]
+    restart: unless-stopped
+
+  bene-gateway:
+    image: nginx:alpine
+    container_name: openg2p-bene-gateway
+    depends_on: [iam-bene-api, bene-portal-ui]
+    volumes:
+      - ../config/bene/gateway.conf:/etc/nginx/conf.d/default.conf:ro
+    ports:
+      - "${BENE_GATEWAY_PORT:-3030}:80"
+    networks: [default]
+    restart: unless-stopped
+
+networks:
+  default:
+    name: openg2p-developer_default
+    external: true

@@ -26,6 +26,17 @@ free_port() {
   local label="$2"
   local pids=""
 
+  # Under OrbStack (and similar), the host-side listener for a Docker
+  # published port is a shared forwarder process, not one process per port.
+  # Killing it by PID can take down port-forwarding for every container, not
+  # just this one. If a running container actually publishes this port,
+  # leave it alone — it's infra, not a leftover native process.
+  if command -v docker >/dev/null 2>&1 && docker ps --format '{{.Ports}}' 2>/dev/null \
+      | grep -qE "(:|^)${port}->"; then
+    echo "Skipping ${label} (port ${port}) — published by a running Docker container."
+    return 0
+  fi
+
   if command -v lsof >/dev/null 2>&1; then
     pids="$(lsof -tiTCP:"${port}" -sTCP:LISTEN 2>/dev/null || true)"
   fi
@@ -76,8 +87,14 @@ free_port "${IAM_STAFF_PORT}" "IAM staff API"
 free_port "${AWE_API_PORT}" "AWE API"
 free_port "${AWE_UI_PORT}" "AWE admin UI"
 case "$VARIANT" in
+  farmer-registry) free_port "${MASTER_DATA_API_PORT}" "${VARIANT} Master Data API" ;;
   national-social-registry) free_port "${NSR_MASTER_DATA_API_PORT}" "${VARIANT} Master Data API" ;;
-  *) free_port "${MASTER_DATA_API_PORT}" "${VARIANT} Master Data API" ;;
+  *)
+    # shellcheck disable=SC1091
+    source "${ROOT_DIR}/scripts/lib/extension-manifest.sh"
+    extension_manifest_load "$VARIANT"
+    free_port "${EXTENSION_MASTER_DATA_API_PORT:-${MASTER_DATA_API_PORT}}" "${VARIANT} Master Data API"
+    ;;
 esac
 
 # Next.js can keep running after the shell job exits; stop by path as well.

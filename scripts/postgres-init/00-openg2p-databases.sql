@@ -85,3 +85,6 @@ CREATE EXTENSION IF NOT EXISTS pg_trgm;
 
 \c farmer_registry_db
 CREATE EXTENSION IF NOT EXISTS pg_trgm;
+
+\c awe
+CREATE EXTENSION IF NOT EXISTS pg_trgm;

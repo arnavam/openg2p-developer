@@ -99,6 +99,8 @@ for target in targets:
             continue
         if marker_begin in line or marker_end in line:
             continue
+        if "# Sourced from versions.yaml — do not hand-edit; run: make sync-images" in line:
+            continue
         kept.append(line)
     body = "".join(kept)
     body = block_re.sub("", body).rstrip() + "\n\n" + block

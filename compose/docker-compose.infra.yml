@@ -5,7 +5,7 @@ name: openg2p-developer
 
 services:
   postgres:
-    profiles: [infra, commons, pbms, farmer-registry, nsr-registry, farmer-registry-seed, nsr-registry-seed, bridge, spar, full]
+    profiles: [infra, commons, pbms, farmer-registry, nsr-registry, livestock-registry, farmer-registry-seed, nsr-registry-seed, bridge, spar, full]
     image: postgres:16
     container_name: openg2p-postgres
     environment:
@@ -24,7 +24,7 @@ services:
     restart: unless-stopped
 
   redis:
-    profiles: [with-redis, commons, pbms, farmer-registry, nsr-registry, bridge, full]
+    profiles: [with-redis, commons, pbms, farmer-registry, nsr-registry, livestock-registry, bridge, full]
     image: redis:7-alpine
     container_name: openg2p-redis
     ports:
@@ -37,7 +37,7 @@ services:
     restart: unless-stopped
 
   minio:
-    profiles: [infra, commons, farmer-registry, nsr-registry, farmer-registry-seed, nsr-registry-seed, full]
+    profiles: [infra, commons, farmer-registry, nsr-registry, livestock-registry, farmer-registry-seed, nsr-registry-seed, full]
     image: minio/minio:latest
     container_name: openg2p-minio
     command: server /data --console-address ":9001"
@@ -50,14 +50,15 @@ services:
     volumes:
       - minio_data:/data
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/9000"]
       interval: 10s
       timeout: 5s
       retries: 10
+      start_period: 5s
     restart: unless-stopped
 
   minio-init:
-    profiles: [infra, commons, farmer-registry, nsr-registry, farmer-registry-seed, nsr-registry-seed, full]
+    profiles: [infra, commons, farmer-registry, nsr-registry, livestock-registry, farmer-registry-seed, nsr-registry-seed, full]
     image: minio/mc:latest
     container_name: openg2p-minio-init
     depends_on:
@@ -79,9 +80,8 @@ services:
     restart: "no"
 
   keycloak:
-    profiles: [infra, commons, pbms, farmer-registry, nsr-registry, farmer-registry-seed, nsr-registry-seed, bridge, spar, full]
+    profiles: [infra, commons, pbms, farmer-registry, nsr-registry, livestock-registry, farmer-registry-seed, nsr-registry-seed, bridge, spar, full]
     image: quay.io/keycloak/keycloak:26.0
-    platform: linux/amd64
     container_name: openg2p-keycloak
     command: start-dev --import-realm
     environment:
@@ -98,12 +98,12 @@ services:
       test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/8080"]
       interval: 10s
       timeout: 5s
-      retries: 20
-      start_period: 30s
+      retries: 35
+      start_period: 60s
     restart: unless-stopped
 
   id-generator:
-    profiles: [infra, commons, farmer-registry, nsr-registry, farmer-registry-seed, nsr-registry-seed, full]
+    profiles: [infra, commons, farmer-registry, nsr-registry, livestock-registry, farmer-registry-seed, nsr-registry-seed, full]
     image: ${ID_GENERATOR_IMAGE:-openg2p/openg2p-id-generator:1.0.0}
     platform: linux/amd64
     container_name: openg2p-id-generator
@@ -137,9 +137,8 @@ services:
     restart: unless-stopped
 
   keycloak-init:
-    profiles: [infra, commons, pbms, farmer-registry, nsr-registry, farmer-registry-seed, nsr-registry-seed, bridge, spar, full]
+    profiles: [infra, commons, pbms, farmer-registry, nsr-registry, livestock-registry, farmer-registry-seed, nsr-registry-seed, bridge, spar, full]
     image: quay.io/keycloak/keycloak:26.0
-    platform: linux/amd64
     container_name: openg2p-keycloak-init
     depends_on:
       keycloak:
@@ -167,8 +166,7 @@ services:
     volumes:
       - ../scripts/keycloak-init.sh:/keycloak-init.sh:ro
       - ../scripts/keycloak-ensure-extension-clients.sh:/keycloak-ensure-extension-clients.sh:ro
-      - ../scripts/lib/extension-manifest.sh:/scripts/lib/extension-manifest.sh:ro
-      - ../scripts/lib/keycloak-registry-roles.sh:/scripts/lib/keycloak-registry-roles.sh:ro
+      - ../scripts/lib:/scripts/lib:ro
       - ${OPENG2P_WORKSPACE:-../openg2p-workspace}:/workspace:ro
     entrypoint: ["/bin/bash", "/keycloak-init.sh"]
     restart: "no"

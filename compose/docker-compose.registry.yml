@@ -379,3 +379,128 @@ services:
       TEMPLATE_BUCKET_NAME: templates
       IMAGE_BUCKET_NAME: registrant-photos
     restart: "no"
+
+  livestock-master-data-api:
+    profiles: [livestock-registry, full]
+    image: ${MASTER_DATA_API_IMAGE:-openg2p/openg2p-gen2-master-data-api:1.0.1}
+    container_name: openg2p-livestock-master-data-api
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      iam-staff-api:
+        condition: service_healthy
+    env_file:
+      - ../generated/livestock-registry/docker/master-data-api.env
+    environment:
+      GEN2_MASTER_DATA_API_HOST: "0.0.0.0"
+      GEN2_MASTER_DATA_API_PORT: "8000"
+      GEN2_MASTER_DATA_API_NO_OF_WORKERS: "2"
+    ports:
+      - "${LIVESTOCK_MASTER_DATA_API_PORT:-8044}:8000"
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/ping')\"",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 18
+      start_period: 60s
+    restart: unless-stopped
+
+  livestock-registry-staff-api:
+    profiles: [livestock-registry, full]
+    image: ${LIVESTOCK_REGISTRY_STAFF_API_IMAGE:-openg2p/openg2p-livestock-registry-staff-api:1.0.0}
+    container_name: openg2p-livestock-registry-staff-api
+    extra_hosts:
+      - "localhost:host-gateway"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      iam-staff-api:
+        condition: service_healthy
+      awe:
+        condition: service_healthy
+      livestock-master-data-api:
+        condition: service_healthy
+    env_file:
+      - ../generated/livestock-registry/docker/staff-portal-api.env
+    environment:
+      REGISTRY_STAFF_PORTAL_API_APP_PORT: "8000"
+      STAFF_PORTAL_PORT: "8000"
+    ports:
+      - "${LIVESTOCK_REGISTRY_STAFF_API_PORT:-8041}:8000"
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/ping')\"",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 18
+      start_period: 60s
+    restart: unless-stopped
+
+  livestock-registry-celery-worker:
+    profiles: [livestock-registry, full]
+    image: ${LIVESTOCK_REGISTRY_CELERY_IMAGE:-openg2p/openg2p-livestock-registry-celery:1.0.0}
+    container_name: openg2p-livestock-registry-celery-worker
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      id-generator:
+        condition: service_healthy
+    env_file:
+      - ../generated/livestock-registry/docker/celery-workers.env
+    environment:
+      CELERY_APP: openg2p_registry_celery_worker.main.celery_app
+      CELERY_OPTS: worker -Q livestock_registry_worker_queue --loglevel=info
+    restart: unless-stopped
+
+  livestock-registry-celery-beat:
+    profiles: [livestock-registry, full]
+    image: ${LIVESTOCK_REGISTRY_CELERY_IMAGE:-openg2p/openg2p-livestock-registry-celery:1.0.0}
+    container_name: openg2p-livestock-registry-celery-beat
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    env_file:
+      - ../generated/livestock-registry/docker/celery-beat.env
+    environment:
+      CELERY_APP: openg2p_registry_celery_beat.main.celery_app
+      CELERY_OPTS: worker --beat -Q celery --loglevel=info --schedule=/tmp/celery-beat-schedule-livestock.db
+    restart: unless-stopped
+
+  livestock-registry-staff-ui:
+    profiles: [livestock-registry, full]
+    image: ${REGISTRY_STAFF_PORTAL_UI_IMAGE:-openg2p/openg2p-registry-staff-portal-ui:1.1.1}
+    container_name: openg2p-livestock-registry-staff-ui
+    extra_hosts:
+      - "localhost:host-gateway"
+    depends_on:
+      livestock-registry-staff-api:
+        condition: service_healthy
+      iam-staff-api:
+        condition: service_healthy
+    env_file:
+      - ../generated/livestock-registry/docker/staff-portal-ui.env
+    environment:
+      PORT: "3000"
+      HOSTNAME: "0.0.0.0"
+    ports:
+      - "${LIVESTOCK_REGISTRY_UI_PORT:-3020}:3000"
+    restart: unless-stopped

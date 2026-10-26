@@ -249,7 +249,7 @@ while IFS= read -r custom_variant; do
     "${EXTENSION_KEYCLOAK_CLIENT_ID}" \
     "${EXTENSION_UI_APP_MNEMONIC}" \
     "${REGISTRY_AUTH_ENABLED}" \
-    "${MASTER_DATA_API_PORT}" \
+    "${EXTENSION_MASTER_DATA_API_PORT:-${MASTER_DATA_API_PORT}}" \
     "${EXTENSION_PYTHON_MODULE:-openg2p_registry_extensions}"
 done < <(extension_manifest_list_variants)
 

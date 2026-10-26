@@ -89,6 +89,7 @@ extension_manifest_load() {
   EXTENSION_MASTER_DATA_DB="$(extension_manifest_get "$file" "master_data_db")"
   EXTENSION_STAFF_API_PORT="$(extension_manifest_get "$file" "staff_api_port")"
   EXTENSION_UI_PORT="$(extension_manifest_get "$file" "ui_port")"
+  EXTENSION_MASTER_DATA_API_PORT="$(extension_manifest_get "$file" "master_data_api_port")"
   EXTENSION_WORKER_QUEUE="$(extension_manifest_get "$file" "worker_queue")"
   EXTENSION_KEYCLOAK_CLIENT_ID="$(extension_manifest_get "$file" "keycloak_client_id")"
   EXTENSION_UI_APP_MNEMONIC="$(extension_manifest_get "$file" "ui_app_mnemonic")"
